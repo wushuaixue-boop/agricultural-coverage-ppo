@@ -2,8 +2,8 @@
   "source_commit": "a867bfbbdba2299cb1ba695b52fe7bb81d548b03",
   "files": {
     "legacy_models.json": "cdb4588be10426552ccff03fe6b8b96738a0454bd26625185693a9bdfd33ae49",
-    "session.py": "83149673ae23403c1731761e746bf5d94d513efff4ce9ea03d1f779c5107c51c",
-    "train.py": "d7878ae15d52f1ab48e39a7576ed6f8e1e121cf8c9ec777bdad7195004a332e9",
+    "session.py": "020aa02ce58c55e699afcd9d7663e7f1b747885b87146a8108636fda7c0e7ffc",
+    "train.py": "fdcc0b19cbdfe55302e042c8fd3db86f948d6aa4a9d82186f527b823619c3086",
     "versions/v1_2/ppo_coverage_planning_v1/__init__.py": "4d3fdb1b128055f240f40fc800ac9847537ea6fa3e8da08d2e547d075c0aff58",
     "versions/v1_2/ppo_coverage_planning_v1/config.py": "d0a9f60e0680b0338adaa65dba1b005f5e6406bc865e817e001088ba39a84390",
     "versions/v1_2/ppo_coverage_planning_v1/coverage_map.py": "f8408094c9e5a574d1938359c4601bb684ee3550abf88eb35a4fe1a809ea7f30",
@@ -19,5 +19,8 @@
     "versions/v1_2/ppo_coverage_planning_v1/robot_specs.py": "0df55cd5cd04aaa5296724ca7542a4d8343f5c8b815cca3f090694a141c091b2",
     "versions/v1_2/ppo_coverage_planning_v1/train_cli.py": "9a02a945126ab641818bfb31a51014a8685c3fad3d1251852b7bff2d9b8ff08a",
     "versions/v1_2/ppo_coverage_planning_v1/trainer.py": "24e2ca45c7fab865e499210dc97740b64823fd268bff480b678178f5a5a427d8"
-  }
+  },
+  "compatible_single_vehicle_packages": [
+    "de0a1d2adaa04bae2cb04d03dcb06339106736c645c4708fd7957dfc12d35450"
+  ]
 }

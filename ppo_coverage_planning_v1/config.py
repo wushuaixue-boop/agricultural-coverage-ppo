@@ -4,11 +4,12 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 import json
 import math
+from numbers import Integral
 from pathlib import Path
 from typing import Any
 
 from .dynamics import ControlInterface
-from .env import ObservationConfig, PPOEnvConfig
+from .env import ObservationConfig, PPOCoverageEnv, PPOEnvConfig
 from .field_world import CollisionMode
 from .rewards import RewardConfig, get_reward_preset
 
@@ -72,6 +73,28 @@ class PPOTrainConfig:
     checkpoint_freq_steps: int = 50_000
     seed: int = 42
     device: str = "auto"
+    num_vehicles: int = 1
+    inter_vehicle_clearance_m: float = 0.5
+
+    def __post_init__(self) -> None:
+        if isinstance(self.num_vehicles, bool) or not isinstance(self.num_vehicles, Integral) or self.num_vehicles < 1:
+            raise ValueError("num_vehicles must be a positive integer")
+        if not math.isfinite(self.inter_vehicle_clearance_m) or self.inter_vehicle_clearance_m < 0:
+            raise ValueError("inter_vehicle_clearance_m must be finite and nonnegative")
+
+    def make_env(self, *, env_config: PPOEnvConfig | None = None, **kwargs) -> PPOCoverageEnv:
+        env_config = env_config if env_config is not None else self.build_env_config()
+        if self.num_vehicles == 1:
+            return PPOCoverageEnv(env_config=env_config, **kwargs)
+
+        from .multi_vehicle_env import MultiVehicleCoverageEnv
+
+        return MultiVehicleCoverageEnv(
+            env_config=env_config,
+            num_vehicles=self.num_vehicles,
+            inter_vehicle_clearance_m=self.inter_vehicle_clearance_m,
+            **kwargs,
+        )
 
     def effective_gamma(self) -> float:
         if self.gamma_override is not None:

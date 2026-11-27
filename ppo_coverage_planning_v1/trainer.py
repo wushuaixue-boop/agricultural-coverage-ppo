@@ -27,7 +27,6 @@ from . import ENV_VERSION
 from .config import PPOTrainConfig
 from .curriculum import CurriculumManager, build_validation_suite_for_stage
 from .datasets import AgriculturalFieldDataset
-from .env import PPOCoverageEnv
 from .networks import AgCoverageFeaturesExtractor, count_trainable_parameters
 from .robot_specs import get_robot_by_id
 
@@ -50,8 +49,7 @@ def _make_env_fn(
     def _init() -> Monitor:
         ds = AgriculturalFieldDataset(dataset_path) if dataset_path else None
         fixed_robot = None if stage_id == 7 else get_robot_by_id(cfg.robot_id)
-        env = PPOCoverageEnv(
-            env_config=cfg.build_env_config(),
+        env = cfg.make_env(
             dataset=ds,
             curriculum_stage=stage_id,
             split="train",
@@ -136,7 +134,7 @@ def evaluate_policy_on_suite(
 
     for field_rec, robot_spec, ep_seed in suite:
         world = field_rec.to_world(sdf_resolution_m=0.5)
-        env = PPOCoverageEnv(env_config=strict_cfg, world=world, robot_spec=robot_spec)
+        env = cfg.make_env(env_config=strict_cfg, world=world, robot_spec=robot_spec)
         obs, _ = env.reset(
             seed=ep_seed,
             options={
@@ -168,6 +166,7 @@ def evaluate_policy_on_suite(
         ep_sum["ep_seed"] = ep_seed
         summaries.append(ep_sum)
         if record_trajectories:
+            poses = env.get_trajectory_poses()
             trajectories.append({
                 "field_id": field_rec.field_id,
                 "family": field_rec.family,
@@ -175,7 +174,7 @@ def evaluate_policy_on_suite(
                 "wkb_hex": field_rec.wkb_hex,
                 "ep_seed": ep_seed,
                 "summary": ep_sum,
-                "trajectory_poses": env.get_trajectory_poses(),
+                "trajectory_poses": poses.tolist() if isinstance(poses, np.ndarray) else poses,
             })
         env.close()
 
@@ -212,6 +211,11 @@ def evaluate_policy_on_suite(
         - 18.0 * metrics["clearance_violation_rate"]
         - 0.15 * metrics["mean_repeated_treatment_pct"]
     )
+    if cfg.num_vehicles > 1:
+        metrics["vehicle_collision_rate"] = float(np.mean([s["vehicle_collision"] for s in summaries]))
+        metrics["vehicle_clearance_violation_rate"] = float(
+            np.mean([s["vehicle_clearance_breach"] for s in summaries])
+        )
     return metrics, trajectories
 
 

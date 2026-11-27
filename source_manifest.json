@@ -3,27 +3,31 @@
   "files": {
     "legacy_models.json": "cdb4588be10426552ccff03fe6b8b96738a0454bd26625185693a9bdfd33ae49",
     "ppo_coverage_planning_v1/__init__.py": "4d3fdb1b128055f240f40fc800ac9847537ea6fa3e8da08d2e547d075c0aff58",
-    "ppo_coverage_planning_v1/config.py": "edc5e4b85388cd3c1e4968129660f94ec1c892b45b2314ccde4e83c3d2c3a4f3",
+    "ppo_coverage_planning_v1/config.py": "189973400e5258232eaaaba552dc0c744324e4e55d51928b8c45b7a333be1ff0",
     "ppo_coverage_planning_v1/coverage_map.py": "617c9e861d179c22ca8a15f39ef70f5eb454503812b89f9c1a3129e4ba157129",
     "ppo_coverage_planning_v1/curriculum.py": "b5575a21f78dde8661e5d03fee58cfdc1f2d316f9cba922a04eb665391c488c8",
     "ppo_coverage_planning_v1/datasets.py": "c690631ba8bc1ecb0e8c640429930b536e75d684316c67aea7f27197adc1a6f2",
     "ppo_coverage_planning_v1/dynamics.py": "141ed8e5bbe4f7bb424155e3e9ec8e3f6446da3e8b6f616f97cceb05ccde72ad",
     "ppo_coverage_planning_v1/env.py": "977f7a5c213127442d7581501726230eb7b8a5eb1b6367ce38f0b4ac2ee90525",
-    "ppo_coverage_planning_v1/evaluate_cli.py": "4ffb1eb0c5713f46f4d606e7192b25f680e02c8b6d58b8b5b84d1e7985fd5a2f",
+    "ppo_coverage_planning_v1/evaluate_cli.py": "9f6361f8736171d92d52746d04a6ac55592be38aa12c2928a5799bc4cf5e56b9",
     "ppo_coverage_planning_v1/evaluator.py": "1b196910e50bd73796d6ef3a3fb3e5ee761d0abda00007e5c6ae25f3b288898a",
     "ppo_coverage_planning_v1/field_world.py": "d3f7454c589deeb2889ab55e430ab0356b02a12bec060ec00e20fed9755510b2",
-    "ppo_coverage_planning_v1/networks.py": "0e1e85e15a8c77d050b5ac58104f2bf5008a7927aa0b9c3f05f8e2486fdcf636",
+    "ppo_coverage_planning_v1/multi_vehicle_env.py": "1d11e5be5983c0e8506ac3bf54b3580e4d3d65cca245428b530f4c6d14c2d5cb",
+    "ppo_coverage_planning_v1/networks.py": "0960644b5b4ee87b5754c6378e8007fcf18320bcbe0d7ae6e6baf60ad5f1ade4",
     "ppo_coverage_planning_v1/rewards.py": "0281993282410c55b6d7689cf17aabebfd682313f7e240d4699144b196f29512",
     "ppo_coverage_planning_v1/robot_specs.py": "0df55cd5cd04aaa5296724ca7542a4d8343f5c8b815cca3f090694a141c091b2",
     "ppo_coverage_planning_v1/train_cli.py": "9a02a945126ab641818bfb31a51014a8685c3fad3d1251852b7bff2d9b8ff08a",
-    "ppo_coverage_planning_v1/trainer.py": "c3a2165987f58ef153f2ad07b9d7aea823619cca04114f8c795be8229f318afb",
+    "ppo_coverage_planning_v1/trainer.py": "34e9a853f46c451a719f1d3dff89406a4fb22c083b6b32a3d4874a60ce026a9f",
     "ppo_fast/__init__.py": "49542bf2aa8c8909070bd5096135cc24fba13d3e6b7496f42f4f2a41a7651244",
     "ppo_fast/dynamics.cpp": "a623c37301c1af5fb1d240b6e6d3da398a5f299dc38cfe23d4d4d8ffc342bcfb",
     "ppo_fast/grid.cpp": "a7207676825e50eb2923e65a2719666b6bf46d2950162c06c6b89a971c06bfc0",
     "ppo_fast/maps.py": "99a534151856629410bdafc428319001218ae7c91f5df8ecba2e17e6a62e3901",
     "ppo_fast/native.py": "dfbb05f82cad2df0394f4c8e892bfffd56f3ee7b5a701e67de5f14413b297bea",
     "ppo_fast/simulator.py": "bb1aca5f828cb924a78f8da199a120c758218f4fd931aa71af373fb420cd49b2",
-    "session.py": "83149673ae23403c1731761e746bf5d94d513efff4ce9ea03d1f779c5107c51c",
-    "train.py": "d7878ae15d52f1ab48e39a7576ed6f8e1e121cf8c9ec777bdad7195004a332e9"
-  }
+    "session.py": "020aa02ce58c55e699afcd9d7663e7f1b747885b87146a8108636fda7c0e7ffc",
+    "train.py": "fdcc0b19cbdfe55302e042c8fd3db86f948d6aa4a9d82186f527b823619c3086"
+  },
+  "compatible_single_vehicle_packages": [
+    "bef2315e866d48f349bd6f857338928f042909496d702c52064faeaead4ad400"
+  ]
 }
