@@ -51,17 +51,17 @@ class AgCoverageFeaturesExtractor(BaseFeaturesExtractor):
         spaces = observation_space.spaces
         self.has_local = "local_map" in spaces
         self.has_global = "global_map" in spaces
+        self.has_vehicle_axis = "vehicle_pose" in spaces
+        num_vehicles = spaces["vehicle_pose"].shape[0] if self.has_vehicle_axis else 1
 
-        total_dim = state_dim + sensor_dim
-        if self.has_local:
-            total_dim += local_dim
+        total_dim = num_vehicles * (state_dim + sensor_dim + (local_dim if self.has_local else 0))
         if self.has_global:
             total_dim += global_dim
 
         super().__init__(observation_space, features_dim=total_dim)
 
         if self.has_local:
-            c, h, w = spaces["local_map"].shape
+            c, h, w = spaces["local_map"].shape[-3:]
             self.local_cnn = _make_map_cnn(c, h, w, local_dim)
         else:
             self.local_cnn = None
@@ -72,10 +72,11 @@ class AgCoverageFeaturesExtractor(BaseFeaturesExtractor):
         else:
             self.global_cnn = None
 
-        prop_dim = int(spaces["proprio"].shape[0])
-        cap_dim = int(spaces["capabilities"].shape[0])
+        prop_dim = spaces["proprio"].shape[-1]
+        cap_dim = spaces["capabilities"].shape[-1]
+        pose_dim = spaces["vehicle_pose"].shape[-1] if self.has_vehicle_axis else 0
         self.state_mlp = nn.Sequential(
-            nn.Linear(prop_dim + cap_dim, 64),
+            nn.Linear(prop_dim + cap_dim + pose_dim, 64),
             nn.LayerNorm(64),
             nn.ReLU(),
             nn.Linear(64, state_dim),
@@ -83,7 +84,7 @@ class AgCoverageFeaturesExtractor(BaseFeaturesExtractor):
         )
 
         prog_dim = int(spaces["progress"].shape[0])
-        obs_dim = int(spaces["obstacles"].shape[0])
+        obs_dim = int(spaces["obstacles"].shape[-1])
         self.sensor_mlp = nn.Sequential(
             nn.Linear(prog_dim + obs_dim, 64),
             nn.LayerNorm(64),
@@ -93,17 +94,30 @@ class AgCoverageFeaturesExtractor(BaseFeaturesExtractor):
         )
 
     def forward(self, observations: dict[str, torch.Tensor]) -> torch.Tensor:
+        # Fleet observations have a vehicle axis after the batch axis. Apply
+        # the same encoders to every vehicle, retaining vehicle order for PPO.
+        state = [observations["proprio"], observations["capabilities"]]
+        progress = observations["progress"]
+        local_map = observations.get("local_map")
+        batch_size = progress.shape[0]
+        if self.has_vehicle_axis:
+            poses = observations["vehicle_pose"]
+            state.append(poses)
+            progress = progress.unsqueeze(1).expand(-1, poses.shape[1], -1)
+            if local_map is not None:
+                local_map = local_map.flatten(0, 1)
+
         parts: list[torch.Tensor] = []
         if self.local_cnn is not None:
-            parts.append(self.local_cnn(observations["local_map"]))
+            parts.append(self.local_cnn(local_map).reshape(batch_size, -1))
         if self.global_cnn is not None:
             parts.append(self.global_cnn(observations["global_map"]))
 
-        state_in = torch.cat([observations["proprio"], observations["capabilities"]], dim=1)
-        parts.append(self.state_mlp(state_in))
+        state_in = torch.cat(state, dim=-1)
+        parts.append(self.state_mlp(state_in).reshape(batch_size, -1))
 
-        sensor_in = torch.cat([observations["progress"], observations["obstacles"]], dim=1)
-        parts.append(self.sensor_mlp(sensor_in))
+        sensor_in = torch.cat([progress, observations["obstacles"]], dim=-1)
+        parts.append(self.sensor_mlp(sensor_in).reshape(batch_size, -1))
         return torch.cat(parts, dim=1)
 
 

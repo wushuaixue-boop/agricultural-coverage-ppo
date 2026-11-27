@@ -68,9 +68,11 @@ def make_env(cfg, path, stage, robot_mode):
         activate_backend()
         dataset = AgriculturalFieldDataset(path) if path else None
         robot = None if robot_mode == "curriculum" and stage == 7 else get_robot_by_id(cfg.robot_id)
-        return Monitor(PPOCoverageEnv(env_config=cfg.build_env_config(), dataset=dataset,
-                                      curriculum_stage=stage, split="train", fixed_robot=robot,
-                                      allow_sampled_robots=cfg.allow_sampled_robots))
+        # V1.2 still uses its original single-vehicle environment.
+        create_env = getattr(cfg, "make_env", PPOCoverageEnv)
+        return Monitor(create_env(env_config=cfg.build_env_config(), dataset=dataset,
+                                  curriculum_stage=stage, split="train", fixed_robot=robot,
+                                  allow_sampled_robots=cfg.allow_sampled_robots))
     return create
 
 
@@ -104,8 +106,13 @@ def train(out, *, additional=1024, cfg=None, resume=None, data=None, device="cpu
         state_file = ck/"session.json"
         if state_file.exists():
             state = json.loads(state_file.read_bytes())
+            archived_package = state["package_sha256"]
+            compatible_packages = json.loads(manifest_path().read_bytes()).get("compatible_single_vehicle_packages", [])
+            package_matches = archived_package == package_hash or (
+                meta["train_config"].get("num_vehicles", 1) == 1 and archived_package in compatible_packages
+            )
             if (state["source_commit"] != source or state["fields"] != field_hash or
-                state["package_sha256"] != package_hash or
+                not package_matches or
                 any(sha(ck/f)!=h for f,h in state["files"].items())):
                 raise ValueError("Checkpoint, simulator or field bindings changed")
             best = state["best_score"]

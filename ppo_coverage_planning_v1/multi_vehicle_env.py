@@ -213,7 +213,12 @@ class MultiVehicleCoverageEnv(PPOCoverageEnv):
         ]
         new_area = sum(delta.newly_treated_m2 for delta in deltas)
         step_distance = sum(sim.state.s - start.s for sim, start in zip(simulators, previous, strict=True))
-        self._time_since_new_cov_s = 0.0 if new_area >= self.cfg.meaningful_new_area_m2 else self._time_since_new_cov_s + dt
+        if new_area >= self.cfg.meaningful_new_area_m2:
+            self._time_since_new_cov_s = 0.0
+        else:
+            self._time_since_new_cov_s += dt
+            self._ep_time_without_new_cov_s += dt
+            self._ep_unproductive_dist_m += step_distance
         self._recent_new_areas.append((new_area, dt))
         self._step_count += 1
         snapshot = self.coverage.snapshot()
@@ -235,9 +240,23 @@ class MultiVehicleCoverageEnv(PPOCoverageEnv):
             clearance_margin_above_req_m=margin, time_since_new_coverage_s=self._time_since_new_cov_s,
             coverage_completed_safely=success,
         )
+        self._ep_reward += reward
+        for name, value in terms.items():
+            self._ep_reward_terms[name] = self._ep_reward_terms.get(name, 0.0) + value
+
         for vehicle, command, diag in zip(self._vehicles, actions, diagnostics, strict=True):
             vehicle._last_diag = diag
             vehicle._prev_action[:] = (1.0, np.clip(command[0], -1, 1)) if self._action_dim == 1 else np.clip(command, -1, 1)
+            self._ep_saturation_steps += int(diag.any_saturation)
+            self._ep_constraint_violations += int(
+                diag.min_v_substep < -1e-6
+                or diag.max_v_substep > spec.max_straight_speed_m_s + 1e-5
+                or diag.max_abs_kappa_substep > spec.max_curvature_inv_m + 1e-5
+                or diag.max_abs_omega_substep > spec.max_angular_velocity_rad_s + 1e-5
+                or diag.max_abs_spatial_rate_substep > spec.max_curvature_rate_inv_m2 + 1e-5
+                or diag.max_abs_accel_substep > max(spec.max_linear_accel_m_s2, spec.max_linear_decel_m_s2) + 1e-5
+                or diag.max_turning_speed_excess_m_s > 1e-4
+            )
         if record_trajectory:
             self._fleet_trajectory.append(self._trajectory_frame())
 
@@ -258,6 +277,39 @@ class MultiVehicleCoverageEnv(PPOCoverageEnv):
             "vehicle_collision": vehicle_collision, "vehicle_clearance_breach": vehicle_clearance_breach,
             "termination_reason": reason, "reward_terms": terms,
         }
+        if self._done:
+            info["episode_summary"] = {
+                "field_id": self.world.field_id,
+                "family": self.world.family,
+                "robot_id": spec.robot_id,
+                "num_vehicles": self.num_vehicles,
+                "inter_vehicle_clearance_m": self.inter_vehicle_clearance_m,
+                "steps": self._step_count,
+                "operating_time_s": self.sim.state.t,
+                "distance_m": info["distance_m"],
+                "coverage_pct": snapshot.coverage_pct,
+                "covered_area_m2": snapshot.covered_area_m2,
+                "repeated_treatment_m2": snapshot.repeated_treatment_m2,
+                "repeated_treatment_pct": snapshot.repeated_treatment_pct,
+                "largest_omission_m2": self.coverage.largest_untreated_component_m2(),
+                "obstacle_treatment_m2": snapshot.obstacle_treatment_m2,
+                "unproductive_dist_m": self._ep_unproductive_dist_m,
+                "time_without_new_cov_s": self._ep_time_without_new_cov_s,
+                "episode_reward": self._ep_reward,
+                "reward_terms_total": dict(self._ep_reward_terms),
+                "termination_reason": reason,
+                "stage_target_pct": self._stage_target_pct,
+                "stage_completed": success,
+                "final_99_completed": not unsafe and snapshot.coverage_pct >= 99.0,
+                "body_collision": body_collision,
+                "exterior_collision": any(report.exterior_collision for report in wall_reports),
+                "obstacle_collision": any(report.obstacle_collision for report in wall_reports),
+                "clearance_violation": clearance_breach,
+                "vehicle_collision": vehicle_collision,
+                "vehicle_clearance_breach": vehicle_clearance_breach,
+                "saturation_rate": self._ep_saturation_steps / (self.num_vehicles * self._step_count),
+                "constraint_violations": self._ep_constraint_violations,
+            }
         return self._fleet_observation(), reward, terminated, truncated, info
 
     def get_trajectory_xy(self):

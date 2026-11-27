@@ -29,6 +29,17 @@ Expect a `step_512` directory with `model.zip`, `vecnormalize.pkl`, `metadata.js
 
 For a longer fresh run, use `python train.py --stage 6 --workers 4 --steps 100000 --interval 25000 --out runs/mixed`. Each run needs a new output directory. Stages stay fixed in this launcher. Stage 1 uses generated rectangles, stage 6 mixes the supplied A–D training fields with procedural fields, and stage 7 also samples robots. Choose 1, 2 or 4 workers. The rollout always contains 512 aggregate steps and requested budgets round up to a complete rollout.
 
+### Multiple vehicles on one field
+
+For V1.0, set `--num-vehicles` to choose how many vehicles share one field and one reward in each environment. The default is one vehicle. Set `--inter-vehicle-clearance-m` for the extra gap between vehicle bodies, which defaults to 0.5 m. Each fleet uses the same robot specification for all its vehicles, and the field must have enough room to place them safely.
+
+```bash
+python train.py --stage 1 --num-vehicles 3 --inter-vehicle-clearance-m 1.0 --steps 512 --out runs/fleet
+python train.py --resume runs/fleet/step_512 --steps 512 --out runs/fleet-continued
+```
+
+One environment step advances the whole fleet. `--workers` controls the number of independent environments. The policy's action and observation shapes depend on fleet size. The checkpoint records the vehicle count and clearance, so omit both flags when resuming. The evaluator reads them from the checkpoint and reports shared raster coverage for multi-vehicle runs.
+
 ## 3. Evaluate and continue
 
 Run these from the repository root after step 2.
